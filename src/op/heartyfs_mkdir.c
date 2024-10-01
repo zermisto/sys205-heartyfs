@@ -3,18 +3,8 @@
 #include <unistd.h>
 #include <fcntl.h>
 #include <errno.h>
-
-struct heartyfs_dir_entry {
-    int block_id;
-    char file_name[28];
-};
-
-struct heartyfs_directory {
-    int type;
-    char name[28];
-    int size;
-    struct heartyfs_dir_entry entries[14];
-};
+#include <libgen.h>
+#include <stdlib.h>
 
 int is_initialized(void *buffer) {
     struct heartyfs_directory *root = (struct heartyfs_directory *)buffer;
@@ -64,36 +54,55 @@ int find_directory(void *buffer, const char *path, struct heartyfs_directory **d
 
 int create_directory(void *buffer, unsigned char *bitmap, const char *path) {
     char *path_copy = strdup(path);
-    char *parent_path = dirname(path_copy);
-    char *dir_name = basename(strcpy(malloc(strlen(path) + 1), path));
+    char *parent_path = dirname(strdup(path_copy));
+    char *dir_name = basename(path_copy);
 
     struct heartyfs_directory *parent_dir;
     int parent_block_id = find_directory(buffer, parent_path, &parent_dir);
 
     if (parent_block_id == -1) {
-        fprintf(stderr, "Parent directory does not exist\n");
-        free(path_copy);
-        free(dir_name);
-        return -1;
+        // Parent directory doesn't exist, try to create it recursively
+        if (create_directory(buffer, bitmap, parent_path) != 0) {
+            fprintf(stderr, "Error: Failed to create parent directory %s\n", parent_path);
+            free(path_copy);
+            free(parent_path);
+            return -1;
+        }
+        // After creating parent, find it again
+        parent_block_id = find_directory(buffer, parent_path, &parent_dir);
     }
 
+    // Check if the directory already exists
+    for (int i = 0; i < parent_dir->size; i++) {
+        if (strcmp(parent_dir->entries[i].file_name, dir_name) == 0) {
+            fprintf(stderr, "Error: Directory %s already exists\n", dir_name);
+            free(path_copy);
+            free(parent_path);
+            return -1;
+        }
+    }
+
+    // Check if the parent directory is full
     if (parent_dir->size >= 14) {
-        fprintf(stderr, "Parent directory is full\n");
+        fprintf(stderr, "Error: Parent directory %s is full\n", parent_path);
         free(path_copy);
-        free(dir_name);
+        free(parent_path);
         return -1;
     }
 
+    // Get a free block
     int new_block_id = find_free_block(bitmap);
     if (new_block_id == -1) {
-        fprintf(stderr, "No free blocks available\n");
+        fprintf(stderr, "Error: No free blocks available\n");
         free(path_copy);
-        free(dir_name);
+        free(parent_path);
         return -1;
     }
 
+    // Mark the block as used
     set_block_used(bitmap, new_block_id);
 
+    // Initialize the new directory block
     struct heartyfs_directory *new_dir = (struct heartyfs_directory *)((char *)buffer + new_block_id * BLOCK_SIZE);
     new_dir->type = 1;
     strncpy(new_dir->name, dir_name, sizeof(new_dir->name) - 1);
@@ -113,12 +122,11 @@ int create_directory(void *buffer, unsigned char *bitmap, const char *path) {
     parent_dir->size++;
 
     free(path_copy);
-    free(dir_name);
+    free(parent_path);
     return 0;
 }
 
 int main(int argc, char *argv[]) {
-    printf("heartyfs_mkdir\n");
     if (argc != 2) {
         fprintf(stderr, "Usage: %s <directory_path>\n", argv[0]);
         return 1;
@@ -126,19 +134,20 @@ int main(int argc, char *argv[]) {
 
     int fd = open(DISK_FILE_PATH, O_RDWR);
     if (fd < 0) {
-        perror("Cannot open the disk file");
+        perror("Error: Cannot open the disk file");
         return 1;
     }
 
     void *buffer = mmap(NULL, DISK_SIZE, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
     if (buffer == MAP_FAILED) {
-        perror("Cannot map the disk file onto memory");
+        perror("Error: Cannot map the disk file onto memory");
         close(fd);
         return 1;
     }
 
+    // Check if heartyfs is initialized
     if (!is_initialized(buffer)) {
-        fprintf(stderr, "heartyfs is not initialized\n");
+        fprintf(stderr, "Error: heartyfs is not initialized\n");
         munmap(buffer, DISK_SIZE);
         close(fd);
         return 1;
@@ -147,17 +156,17 @@ int main(int argc, char *argv[]) {
     unsigned char *bitmap = (unsigned char *)buffer + BLOCK_SIZE;
 
     if (create_directory(buffer, bitmap, argv[1]) == 0) {
-        printf("Directory created successfully\n");
+        printf("Success: Directory %s created successfully\n", argv[1]);
     } else {
-        fprintf(stderr, "Failed to create directory\n");
+        fprintf(stderr, "Error: Failed to create directory %s\n", argv[1]);
     }
 
     if (msync(buffer, DISK_SIZE, MS_SYNC) == -1) {
-        perror("Error syncing changes to disk");
+        perror("Error: Failed to sync changes to disk");
     }
 
     if (munmap(buffer, DISK_SIZE) == -1) {
-        perror("Error unmapping file");
+        perror("Error: Failed to unmap file");
     }
     close(fd);
 
