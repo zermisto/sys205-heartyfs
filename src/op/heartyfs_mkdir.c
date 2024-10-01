@@ -15,7 +15,7 @@ int find_free_block(unsigned char *bitmap) {
     for (int i = 2; i < NUM_BLOCK; i++) {
         if (bitmap[i/8] & (1 << (7 - i%8))) {
             return i;
-        }
+        }   
     }
     return -1;
 }
@@ -127,6 +127,7 @@ int create_directory(void *buffer, unsigned char *bitmap, const char *path) {
 }
 
 int main(int argc, char *argv[]) {
+    printf("heartyfs_mkdir\n");
     if (argc != 2) {
         fprintf(stderr, "Usage: %s <directory_path>\n", argv[0]);
         return 1;
