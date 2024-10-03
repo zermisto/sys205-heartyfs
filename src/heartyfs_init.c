@@ -1,32 +1,24 @@
+/**
+ * @file heartyfs_init.c
+ * @author Panupong Dangkajitpetch (King)
+ * @brief This file initializes the heartyfs file system with superblock and bitmap.
+ * The superblock is stored at block 0 and acts as the metadata of the entire file system.
+ * The bitmap will keep track of all the free blocks in the heartyfs
+ * @version 0.1
+ * @date 2024-10-03
+ * 
+ * @copyright Copyright (c) 2024
+ * 
+ */
 #include "heartyfs.h"
 #include <string.h>
 #include <unistd.h>
 
-struct heartyfs_dir_entry {
-    int block_id;   //4 bytes
-    char file_name[28]; //28 bytes
-};   //Overall: 32 bytes
-
-struct heartyfs_directory {
-    int type;
-    char name[28];
-    int size;
-    struct heartyfs_dir_entry entries[14];
-};
-
-
-struct heartyfs_inode {
-    int type;               // 4 bytes
-    char name[28];          // 28 bytes
-    int size;               // 4 bytes
-    int data_blocks[119];   // 476 bytes
-};  // Overall: 512 bytes
-
-struct heartyfs_data_block {
-    int size;               // 4 bytes
-    char name[508];         // 508 bytes
-};  // Overall: 512 bytes
-
+/**
+ * @brief Initialize the superblock with the root directory.
+ * 
+ * @param buffer - The buffer containing the disk image
+ */
 void init_superblock(void *buffer) {
     struct heartyfs_directory *root = (struct heartyfs_directory *)buffer;
     
@@ -49,17 +41,23 @@ void init_superblock(void *buffer) {
     }
 }
 
+/**
+ * @brief Initialize the bitmap with all blocks marked as free.
+ * 
+ * @param buffer - The buffer containing the disk image
+ */
 void init_bitmap(void *buffer) {
     unsigned char *bitmap = (unsigned char *)buffer + BLOCK_SIZE;  // Start of Block 1
-    int bitmap_size = (NUM_BLOCK - 2) / 8;  // in bytes, excluding superblock and bitmap block
+    int bitmap_size = (NUM_BLOCK - 2) / 8;  // in bytes, excluding superblock and bitmap block (block 0 and 1). 1 byte = 8 blocks
     
     memset(bitmap, 0xFF, bitmap_size);  // Set all bits to 1 (free)
 
-    // Mark superblock and bitmap block as used
+    // Set first byte of bitmap to 0xFC (11111100) to mark the first two blocks as used (superblock and bitmap)
     bitmap[0] = 0xFC;  // 11111100 in binary
 }   
 
 int main() {
+    printf("heartyfs_innit\n");
     // Open the disk file
     int fd = open(DISK_FILE_PATH, O_RDWR);
     if (fd < 0) {
@@ -78,9 +76,7 @@ int main() {
     printf("Disk file mapped to memory successfully.\n");
 
     // Initialize superblock and bitmap
-    printf("before init superblock\n");
     init_superblock(buffer);
-    printf("after init superblock\n");
     init_bitmap(buffer);
 
     printf("Superblock and bitmap initialized.\n");

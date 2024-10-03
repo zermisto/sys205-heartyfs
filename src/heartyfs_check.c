@@ -1,20 +1,23 @@
+/**
+ * @file heartyfs_check.c
+ * @author Panupong Dangkajitpetch (King)
+ * @brief This file checks the heartyfs file system by printing the superblock and bitmap.
+ * @version 0.1
+ * @date 2024-10-03
+ * 
+ * @copyright Copyright (c) 2024
+ * 
+ */
 #include "heartyfs.h"
 #include <string.h>
 #include <unistd.h>
 #include <fcntl.h>
 
-struct heartyfs_dir_entry {
-    int block_id;
-    char file_name[28];
-};
-
-struct heartyfs_directory {
-    int type;
-    char name[28];
-    int size;
-    struct heartyfs_dir_entry entries[14];
-};
-
+/**
+ * @brief Print the contents of the superblock (root directory).
+ * 
+ * @param buffer 
+ */
 void print_superblock(void *buffer) {
     struct heartyfs_directory *root = (struct heartyfs_directory *)buffer;
     
@@ -31,6 +34,11 @@ void print_superblock(void *buffer) {
     }
 }
 
+/**
+ * @brief Print the contents of the bitmap.
+ * 
+ * @param buffer 
+ */
 void print_bitmap(void *buffer) {
     unsigned char *bitmap = (unsigned char *)buffer + BLOCK_SIZE;  // Start of Block 1
     int bitmap_size = (NUM_BLOCK - 2) / 8;  // in bytes, excluding superblock and bitmap block
@@ -46,6 +54,7 @@ void print_bitmap(void *buffer) {
 }
 
 int main() {
+    printf("heartyfs_check\n");
     int fd = open(DISK_FILE_PATH, O_RDONLY);
     if (fd < 0) {
         perror("Cannot open the disk file");

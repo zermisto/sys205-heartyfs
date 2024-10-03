@@ -1,3 +1,13 @@
+/**
+ * @file heartyfs_rmdir.c
+ * @author Panupong Dangkajitpetch (King)
+ * @brief This file makes a directory from the heartyfs file system.
+ * @version 0.1
+ * @date 2024-10-03
+ * 
+ * @copyright Copyright (c) 2024
+ * 
+ */
 #include "../heartyfs.h"
 #include <string.h>
 #include <unistd.h>
@@ -6,45 +16,72 @@
 #include <libgen.h>
 #include <stdlib.h>
 
+/**
+ * @brief Check if the heartyfs is initialized. 
+ * The root directory should have type 1 and name "/".
+ * @param buffer - The buffer containing the disk image
+ * @return int - 1 if initialized, 0 otherwise
+ */
 int is_initialized(void *buffer) {
     struct heartyfs_directory *root = (struct heartyfs_directory *)buffer;
     return (root->type == 1 && strcmp(root->name, "/") == 0);
 }
 
+/**
+ * @brief Find the first free block in the bitmap. 
+ * 
+ * @param bitmap - The bitmap containing the block allocation information
+ * @return int - The block number of the first free block, -1 if no free block is found
+ */
 int find_free_block(unsigned char *bitmap) {
     for (int i = 2; i < NUM_BLOCK; i++) {
-        if (bitmap[i/8] & (1 << (7 - i%8))) {
+        if (bitmap[i/8] & (1 << (7 - i%8))) { 
             return i;
         }   
     }
     return -1;
 }
 
+/**
+ * @brief Set the block used object
+ * 
+ * @param bitmap - The bitmap containing the block allocation information
+ * @param block_num - The block number to set as used
+ */
 void set_block_used(unsigned char *bitmap, int block_num) {
     bitmap[block_num/8] &= ~(1 << (7 - block_num%8));
 }
 
+/**
+ * @brief Find a directory by its path
+ * 
+ * @param buffer - The buffer containing the disk image
+ * @param path - The path of the directory
+ * @param dir - The directory object to be returned
+ * @return int - The block number of the directory, -1 if not found
+ */
 int find_directory(void *buffer, const char *path, struct heartyfs_directory **dir) {
-    char *path_copy = strdup(path);
-    char *token = strtok(path_copy, "/");
-    struct heartyfs_directory *current = buffer;
-    int block_id = 0;
+    char *path_copy = strdup(path); // Copy the path to avoid modifying the original
+    char *token = strtok(path_copy, "/"); // Tokenize the path by '/'
+    struct heartyfs_directory *current = buffer; // Start from the root directory
+    int block_id = 0; // Start from the root directory block
 
+    // Traverse the path to find the directory
     while (token != NULL) {
         int found = 0;
         for (int i = 0; i < current->size; i++) {
             if (strcmp(current->entries[i].file_name, token) == 0) {
                 block_id = current->entries[i].block_id;
                 current = (struct heartyfs_directory *)((char *)buffer + block_id * BLOCK_SIZE);
-                found = 1;
+                found = 1; // Found the directory
                 break;
             }
         }
-        if (!found) {
+        if (!found) { // Directory not found
             free(path_copy);
             return -1;
         }
-        token = strtok(NULL, "/");
+        token = strtok(NULL, "/"); // Move to the next token
     }
 
     *dir = current;
@@ -52,13 +89,21 @@ int find_directory(void *buffer, const char *path, struct heartyfs_directory **d
     return block_id;
 }
 
+/**
+ * @brief Create a directory object
+ * 
+ * @param buffer - The buffer containing the disk image
+ * @param bitmap - The bitmap containing the block allocation information
+ * @param path - The path of the directory to create
+ * @return int - 0 if successful, -1 if failed
+ */
 int create_directory(void *buffer, unsigned char *bitmap, const char *path) {
-    char *path_copy = strdup(path);
-    char *parent_path = dirname(strdup(path_copy));
-    char *dir_name = basename(path_copy);
+    char *path_copy = strdup(path); // Copy the path to avoid modifying the original
+    char *parent_path = dirname(strdup(path_copy)); // Get the parent path
+    char *dir_name = basename(path_copy); // Get the directory name
 
-    struct heartyfs_directory *parent_dir;
-    int parent_block_id = find_directory(buffer, parent_path, &parent_dir);
+    struct heartyfs_directory *parent_dir; // Parent directory object
+    int parent_block_id = find_directory(buffer, parent_path, &parent_dir); // Find the parent directory
 
     if (parent_block_id == -1) {
         // Parent directory doesn't exist, try to create it recursively
@@ -129,6 +174,7 @@ int create_directory(void *buffer, unsigned char *bitmap, const char *path) {
 int main(int argc, char *argv[]) {
     printf("heartyfs_mkdir\n");
     if (argc != 2) {
+        //ex: bin/heartyfs_mkdir /dir1/dir2/dir3/
         fprintf(stderr, "Usage: %s <directory_path>\n", argv[0]);
         return 1;
     }
@@ -154,18 +200,19 @@ int main(int argc, char *argv[]) {
         return 1;
     }
 
-    unsigned char *bitmap = (unsigned char *)buffer + BLOCK_SIZE;
+    unsigned char *bitmap = (unsigned char *)buffer + BLOCK_SIZE; // Start of Block 1
 
+    // Create the directory
     if (create_directory(buffer, bitmap, argv[1]) == 0) {
         printf("Success: Directory %s created successfully\n", argv[1]);
     } else {
         fprintf(stderr, "Error: Failed to create directory %s\n", argv[1]);
     }
-
+    // Sync changes to disk
     if (msync(buffer, DISK_SIZE, MS_SYNC) == -1) {
         perror("Error: Failed to sync changes to disk");
     }
-
+    // Unmap the file and close
     if (munmap(buffer, DISK_SIZE) == -1) {
         perror("Error: Failed to unmap file");
     }
