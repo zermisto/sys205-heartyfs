@@ -10,6 +10,7 @@
  */
 
 #include "../heartyfs.h"
+#include "heartyfs_functions.h"
 #include <string.h>
 #include <unistd.h>
 #include <fcntl.h>
@@ -23,10 +24,10 @@
  * @param bitmap - The bitmap containing the block allocation information
  * @param block_num - The block number to set as free
  */
-void set_block_free(unsigned char *bitmap, int block_num) {
-    //
-    bitmap[block_num/8] |= (1 << (7 - block_num%8));
-}
+// void set_block_free(unsigned char *bitmap, int block_num) {
+//     //
+//     bitmap[block_num/8] |= (1 << (7 - block_num%8));
+// }
 
 /**
  * @brief Find a directory by its path
@@ -38,49 +39,49 @@ void set_block_free(unsigned char *bitmap, int block_num) {
  * @param dir_index - The index of the directory in the parent directory
  * @return int - The block ID of the directory, -1 if not found
  */
-int find_directory(void *buffer, const char *path, struct heartyfs_directory **dir, struct heartyfs_directory **parent_dir, int *dir_index) {
-    char *path_copy = strdup(path);
-    char *parent_path = dirname(strdup(path_copy));
-    char *dir_name = basename(path_copy);
+    int find_directory(void *buffer, const char *path, struct heartyfs_directory **dir, struct heartyfs_directory **parent_dir, int *dir_index) {
+        char *path_copy = strdup(path);
+        char *parent_path = dirname(strdup(path_copy));
+        char *dir_name = basename(path_copy);
 
-    struct heartyfs_directory *current = buffer; // Start at the root
-    int current_block_id = 0; // Start at the root block
-    int found_index = -1; // The block ID of the directory
+        struct heartyfs_directory *current = buffer; // Start at the root
+        int current_block_id = 0; // Start at the root block
+        int found_index = -1; // The block ID of the directory
 
-    // Traverse the path to find the directory
-    char *token = strtok(parent_path, "/");
-    while (token != NULL) {
-        int found = 0;
+        // Traverse the path to find the directory
+        char *token = strtok(parent_path, "/");
+        while (token != NULL) {
+            int found = 0;
+            for (int i = 0; i < current->size; i++) {
+                if (strcmp(current->entries[i].file_name, token) == 0) {
+                    current_block_id = current->entries[i].block_id;
+                    current = (struct heartyfs_directory *)((char *)buffer + current_block_id * BLOCK_SIZE);
+                    found = 1; // Found the directory
+                    break;
+                }
+            }
+            if (!found) { // Directory not found
+                free(path_copy);
+                free(parent_path);
+                return -1;
+            }
+            token = strtok(NULL, "/");
+        }
+        // Find the directory in the parent directory
         for (int i = 0; i < current->size; i++) {
-            if (strcmp(current->entries[i].file_name, token) == 0) {
-                current_block_id = current->entries[i].block_id;
-                current = (struct heartyfs_directory *)((char *)buffer + current_block_id * BLOCK_SIZE);
-                found = 1; // Found the directory
+            if (strcmp(current->entries[i].file_name, dir_name) == 0) {
+                *dir = (struct heartyfs_directory *)((char *)buffer + current->entries[i].block_id * BLOCK_SIZE);
+                *parent_dir = current;
+                *dir_index = i;
+                found_index = current->entries[i].block_id;
                 break;
             }
         }
-        if (!found) { // Directory not found
-            free(path_copy);
-            free(parent_path);
-            return -1;
-        }
-        token = strtok(NULL, "/");
-    }
-    // Find the directory in the parent directory
-    for (int i = 0; i < current->size; i++) {
-        if (strcmp(current->entries[i].file_name, dir_name) == 0) {
-            *dir = (struct heartyfs_directory *)((char *)buffer + current->entries[i].block_id * BLOCK_SIZE);
-            *parent_dir = current;
-            *dir_index = i;
-            found_index = current->entries[i].block_id;
-            break;
-        }
-    }
 
-    free(path_copy);
-    free(parent_path);
-    return found_index;
-}
+        free(path_copy);
+        free(parent_path);
+        return found_index;
+    }
 
 /**
  * @brief Remove a directory from the heartyfs file system

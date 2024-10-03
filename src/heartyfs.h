@@ -1,3 +1,6 @@
+#ifndef HEARTYFS_H
+#define HEARTYFS_H
+
 #include <fcntl.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -33,3 +36,5 @@ struct heartyfs_data_block {
     int size;               // 4 bytes
     char name[508];         // 508 bytes
 };  // Overall: 512 bytes
+
+#endif // HEARTYFS_H

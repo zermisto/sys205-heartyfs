@@ -9,6 +9,7 @@
  * 
  */
 #include "../heartyfs.h"
+#include "heartyfs_functions.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -23,18 +24,18 @@
  * @param bitmap - The bitmap containing the block allocation information  
  * @return int - The block number of the first free block, -1 if no free block is found
  */
-int find_free_block(unsigned char *bitmap) {
-    for (int i = 2; i < NUM_BLOCK; i++) {
-        if (bitmap[i/8] & (1 << (7 - i%8))) {
-            return i;
-        }
-    }
-    return -1;
-}
+// int find_free_block(unsigned char *bitmap) {
+//     for (int i = 2; i < NUM_BLOCK; i++) {
+//         if (bitmap[i/8] & (1 << (7 - i%8))) {
+//             return i;
+//         }
+//     }
+//     return -1;
+// }
 
-void set_block_used(unsigned char *bitmap, int block_num) {
-    bitmap[block_num/8] &= ~(1 << (7 - block_num%8));
-}
+// void set_block_used(unsigned char *bitmap, int block_num) {
+//     bitmap[block_num/8] &= ~(1 << (7 - block_num%8));
+// }
 
 int find_directory(void *buffer, const char *path, struct heartyfs_directory **dir) {
     char *path_copy = strdup(path);

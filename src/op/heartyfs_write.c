@@ -9,6 +9,7 @@
  * 
  */
 #include "../heartyfs.h"
+#include "heartyfs_functions.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -18,63 +19,24 @@
 #include <sys/stat.h>
 #include <libgen.h>
 
-int find_free_block(unsigned char *bitmap) {
-    for (int i = 2; i < NUM_BLOCK; i++) {
-        if (bitmap[i/8] & (1 << (7 - i%8))) {
-            return i;
-        }
-    }
-    return -1;
-}
+// int find_free_block(unsigned char *bitmap) {
+//     for (int i = 2; i < NUM_BLOCK; i++) {
+//         if (bitmap[i/8] & (1 << (7 - i%8))) {
+//             return i;
+//         }
+//     }
+//     return -1;
+// }
 
-void set_block_used(unsigned char *bitmap, int block_num) {
-    bitmap[block_num/8] &= ~(1 << (7 - block_num%8));
-}
+// void set_block_used(unsigned char *bitmap, int block_num) {
+//     bitmap[block_num/8] &= ~(1 << (7 - block_num%8));
+// }
 
-int find_file(void *buffer, const char *path, struct heartyfs_inode **inode) {
-    char *path_copy = strdup(path);
-    char *parent_path = dirname(strdup(path_copy));
-    char *file_name = basename(path_copy);
 
-    struct heartyfs_directory *current = buffer;
-    int current_block_id = 0;
-
-    char *token = strtok(parent_path, "/");
-    while (token != NULL) {
-        int found = 0;
-        for (int i = 0; i < current->size; i++) {
-            if (strcmp(current->entries[i].file_name, token) == 0) {
-                current_block_id = current->entries[i].block_id;
-                current = (struct heartyfs_directory *)((char *)buffer + current_block_id * BLOCK_SIZE);
-                found = 1;
-                break;
-            }
-        }
-        if (!found) {
-            free(path_copy);
-            free(parent_path);
-            return -1;
-        }
-        token = strtok(NULL, "/");
-    }
-
-    for (int i = 0; i < current->size; i++) {
-        if (strcmp(current->entries[i].file_name, file_name) == 0) {
-            *inode = (struct heartyfs_inode *)((char *)buffer + current->entries[i].block_id * BLOCK_SIZE);
-            free(path_copy);
-            free(parent_path);
-            return current->entries[i].block_id;
-        }
-    }
-
-    free(path_copy);
-    free(parent_path);
-    return -1;
-}
 
 int write_file(void *buffer, unsigned char *bitmap, const char *heartyfs_path, const char *external_path) {
     struct heartyfs_inode *inode;
-    int inode_block_id = find_file(buffer, heartyfs_path, &inode);
+    int inode_block_id = find_inode_by_path(buffer, heartyfs_path, &inode);
 
     if (inode_block_id == -1) {
         fprintf(stderr, "Error: File %s does not exist in heartyfs\n", heartyfs_path);
