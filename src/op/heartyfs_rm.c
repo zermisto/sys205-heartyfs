@@ -18,52 +18,14 @@
 #include <sys/mman.h>
 #include <libgen.h>
 
-// void set_block_free(unsigned char *bitmap, int block_num) {
-//     bitmap[block_num/8] |= (1 << (7 - block_num%8));
-// }
-
-// int find_file(void *buffer, const char *path, struct heartyfs_directory **parent_dir, int *file_index) {
-//     char *path_copy = strdup(path);
-//     char *parent_path = dirname(strdup(path_copy));
-//     char *file_name = basename(path_copy);
-
-//     struct heartyfs_directory *current = buffer;
-//     int current_block_id = 0;
-
-//     char *token = strtok(parent_path, "/");
-//     while (token != NULL) {
-//         int found = 0;
-//         for (int i = 0; i < current->size; i++) {
-//             if (strcmp(current->entries[i].file_name, token) == 0) {
-//                 current_block_id = current->entries[i].block_id;
-//                 current = (struct heartyfs_directory *)((char *)buffer + current_block_id * BLOCK_SIZE);
-//                 found = 1;
-//                 break;
-//             }
-//         }
-//         if (!found) {
-//             free(path_copy);
-//             free(parent_path);
-//             return -1;
-//         }
-//         token = strtok(NULL, "/");
-//     }
-
-//     for (int i = 0; i < current->size; i++) {
-//         if (strcmp(current->entries[i].file_name, file_name) == 0) {
-//             *parent_dir = current;
-//             *file_index = i;
-//             free(path_copy);
-//             free(parent_path);
-//             return current->entries[i].block_id;
-//         }
-//     }
-
-//     free(path_copy);
-//     free(parent_path);
-//     return -1;
-// }
-
+/**
+ * @brief Remove a file from the heartyfs file system
+ * 
+ * @param buffer - The buffer containing the disk image
+ * @param bitmap - The bitmap containing the block allocation information
+ * @param path - The path of the file to remove
+ * @return int - 0 if successful, -1 if failed
+ */
 int remove_file(void *buffer, unsigned char *bitmap, const char *path) {
     struct heartyfs_directory *parent_dir;
     int file_index;
@@ -82,7 +44,7 @@ int remove_file(void *buffer, unsigned char *bitmap, const char *path) {
     }
 
     // Free data blocks
-    for (int i = 0; i < 119 && inode->data_blocks[i] != -1; i++) {
+    for (int i = 0; i < INODE_BLOCKS && inode->data_blocks[i] != -1; i++) {
         set_block_free(bitmap, inode->data_blocks[i]);
     }
 

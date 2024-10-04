@@ -19,17 +19,6 @@
 #include <stdlib.h>
 
 /**
- * @brief Set the block free object
- * 
- * @param bitmap - The bitmap containing the block allocation information
- * @param block_num - The block number to set as free
- */
-// void set_block_free(unsigned char *bitmap, int block_num) {
-//     //
-//     bitmap[block_num/8] |= (1 << (7 - block_num%8));
-// }
-
-/**
  * @brief Find a directory by its path
  * 
  * @param buffer - The buffer containing the disk image

@@ -29,31 +29,6 @@ int is_initialized(void *buffer) {
 }
 
 /**
- * @brief Find the first free block in the bitmap. 
- * 
- * @param bitmap - The bitmap containing the block allocation information
- * @return int - The block number of the first free block, -1 if no free block is found
- */
-// int find_free_block(unsigned char *bitmap) {
-//     for (int i = 2; i < NUM_BLOCK; i++) {
-//         if (bitmap[i/8] & (1 << (7 - i%8))) { 
-//             return i;
-//         }   
-//     }
-//     return -1;
-// }
-
-// /**
-//  * @brief Set the block used object
-//  * 
-//  * @param bitmap - The bitmap containing the block allocation information
-//  * @param block_num - The block number to set as used
-//  */
-// void set_block_used(unsigned char *bitmap, int block_num) {
-//     bitmap[block_num/8] &= ~(1 << (7 - block_num%8));
-// }
-
-/**
  * @brief Find a directory by its path
  * 
  * @param buffer - The buffer containing the disk image
@@ -84,7 +59,6 @@ int find_directory(void *buffer, const char *path, struct heartyfs_directory **d
         }
         token = strtok(NULL, "/"); // Move to the next token
     }
-
     *dir = current;
     free(path_copy);
     return block_id;
@@ -93,10 +67,10 @@ int find_directory(void *buffer, const char *path, struct heartyfs_directory **d
 /**
  * @brief Create a directory object
  * 
- * @param buffer 
- * @param bitmap 
- * @param path 
- * @return int 
+ * @param buffer - The buffer containing the disk image
+ * @param bitmap - The bitmap containing the block allocation information
+ * @param path - The path of the directory to create
+ * @return int - 0 if successful, -1 if failed
  */
 int create_directory(void *buffer, unsigned char *bitmap, const char *path) {
     char *path_copy = strdup(path);
@@ -129,7 +103,7 @@ int create_directory(void *buffer, unsigned char *bitmap, const char *path) {
     }
 
     // Check if the parent directory is full
-    if (parent_dir->size >= 14) {
+    if (parent_dir->size >= DIR_MAX_ENTRIES){
         fprintf(stderr, "Error: Parent directory %s is full\n", parent_path);
         free(path_copy);
         free(parent_path);

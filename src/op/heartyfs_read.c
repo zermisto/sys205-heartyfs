@@ -1,7 +1,7 @@
 /**
  * @file heartyfs_read.c
- * @author your name (you@domain.com)
- * @brief 
+ * @author Panupong Dangkajitpetch (King)
+ * @brief This file reads a file from the heartyfs file system.
  * @version 0.1
  * @date 2024-10-03
  * 
@@ -18,47 +18,13 @@
 #include <sys/mman.h>
 #include <libgen.h>
 
-// int find_file(void *buffer, const char *path, struct heartyfs_inode **inode) {
-//     char *path_copy = strdup(path);
-//     char *parent_path = dirname(strdup(path_copy));
-//     char *file_name = basename(path_copy);
-
-//     struct heartyfs_directory *current = buffer;
-//     int current_block_id = 0;
-
-//     char *token = strtok(parent_path, "/");
-//     while (token != NULL) {
-//         int found = 0;
-//         for (int i = 0; i < current->size; i++) {
-//             if (strcmp(current->entries[i].file_name, token) == 0) {
-//                 current_block_id = current->entries[i].block_id;
-//                 current = (struct heartyfs_directory *)((char *)buffer + current_block_id * BLOCK_SIZE);
-//                 found = 1;
-//                 break;
-//             }
-//         }
-//         if (!found) {
-//             free(path_copy);
-//             free(parent_path);
-//             return -1;
-//         }
-//         token = strtok(NULL, "/");
-//     }
-
-//     for (int i = 0; i < current->size; i++) {
-//         if (strcmp(current->entries[i].file_name, file_name) == 0) {
-//             *inode = (struct heartyfs_inode *)((char *)buffer + current->entries[i].block_id * BLOCK_SIZE);
-//             free(path_copy);
-//             free(parent_path);
-//             return current->entries[i].block_id;
-//         }
-//     }
-
-//     free(path_copy);
-//     free(parent_path);
-//     return -1;
-// }
-
+/**
+ * @brief Read a file from the heartyfs file system
+ * 
+ * @param buffer - The buffer containing the disk image
+ * @param path - The path of the file to read
+ * @return int - 0 if successful, -1 if failed
+ */
 int read_file(void *buffer, const char *path) {
     struct heartyfs_inode *inode;
     int inode_block_id = find_inode_by_path(buffer, path, &inode);
@@ -76,7 +42,7 @@ int read_file(void *buffer, const char *path) {
     int remaining = inode->size;
     int block_index = 0;
 
-    while (remaining > 0 && block_index < 119) {
+    while (remaining > 0 && block_index < INODE_BLOCKS) {
         int block_id = inode->data_blocks[block_index];
         if (block_id == -1) {
             break;

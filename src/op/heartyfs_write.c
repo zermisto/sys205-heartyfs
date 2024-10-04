@@ -1,7 +1,7 @@
 /**
  * @file heartyfs_write.c
- * @author your name (you@domain.com)
- * @brief 
+ * @author Panupong Dangkajitpetch (King)
+ * @brief This file writes a file to the heartyfs file system.
  * @version 0.1
  * @date 2024-10-03
  * 
@@ -19,21 +19,15 @@
 #include <sys/stat.h>
 #include <libgen.h>
 
-// int find_free_block(unsigned char *bitmap) {
-//     for (int i = 2; i < NUM_BLOCK; i++) {
-//         if (bitmap[i/8] & (1 << (7 - i%8))) {
-//             return i;
-//         }
-//     }
-//     return -1;
-// }
-
-// void set_block_used(unsigned char *bitmap, int block_num) {
-//     bitmap[block_num/8] &= ~(1 << (7 - block_num%8));
-// }
-
-
-
+/**
+ * @brief Write a file to the heartyfs file system
+ * 
+ * @param buffer - The buffer containing the disk image
+ * @param bitmap - The bitmap containing the block allocation information
+ * @param heartyfs_path - The path of the file in the heartyfs
+ * @param external_path - The path of the external file
+ * @return int - 0 if successful, -1 if failed
+ */
 int write_file(void *buffer, unsigned char *bitmap, const char *heartyfs_path, const char *external_path) {
     struct heartyfs_inode *inode;
     int inode_block_id = find_inode_by_path(buffer, heartyfs_path, &inode);
@@ -64,14 +58,14 @@ int write_file(void *buffer, unsigned char *bitmap, const char *heartyfs_path, c
     }
 
     // Check if the file size exceeds the heartyfs limit
-    if (st.st_size > 119 * 508) {
+    if (st.st_size > INODE_BLOCKS * DATA_BLOCK_NAME_SIZE) {
         fprintf(stderr, "Error: File size exceeds heartyfs limit\n");
         close(ext_fd);
         return -1;
     }
 
     // Clear existing data blocks
-    for (int i = 0; i < 119 && inode->data_blocks[i] != -1; i++) {
+    for (int i = 0; i < INODE_BLOCKS && inode->data_blocks[i] != -1; i++) {
         set_block_used(bitmap, inode->data_blocks[i]);
         memset((char *)buffer + inode->data_blocks[i] * BLOCK_SIZE, 0, BLOCK_SIZE);
         inode->data_blocks[i] = -1;
@@ -92,7 +86,7 @@ int write_file(void *buffer, unsigned char *bitmap, const char *heartyfs_path, c
         inode->data_blocks[block_index] = block_id;
 
         struct heartyfs_data_block *data_block = (struct heartyfs_data_block *)((char *)buffer + block_id * BLOCK_SIZE);
-        int to_read = (remaining > 508) ? 508 : remaining;
+        int to_read = (remaining > DATA_BLOCK_NAME_SIZE) ? DATA_BLOCK_NAME_SIZE : remaining;
         data_block->size = read(ext_fd, data_block->name, to_read);
 
         if (data_block->size < 0) {

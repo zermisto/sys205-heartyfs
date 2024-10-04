@@ -19,24 +19,13 @@
 #include <libgen.h>
 
 /**
- * @brief Find the first free block in the bitmap.
+ * @brief Find a directory by its path
  * 
- * @param bitmap - The bitmap containing the block allocation information  
- * @return int - The block number of the first free block, -1 if no free block is found
+ * @param buffer - The buffer containing the disk image
+ * @param path - The path of the directory
+ * @param dir - The directory object to be returned
+ * @return int - The block number of the directory, -1 if not found
  */
-// int find_free_block(unsigned char *bitmap) {
-//     for (int i = 2; i < NUM_BLOCK; i++) {
-//         if (bitmap[i/8] & (1 << (7 - i%8))) {
-//             return i;
-//         }
-//     }
-//     return -1;
-// }
-
-// void set_block_used(unsigned char *bitmap, int block_num) {
-//     bitmap[block_num/8] &= ~(1 << (7 - block_num%8));
-// }
-
 int find_directory(void *buffer, const char *path, struct heartyfs_directory **dir) {
     char *path_copy = strdup(path);
     char *parent_path = dirname(strdup(path_copy));
@@ -69,6 +58,12 @@ int find_directory(void *buffer, const char *path, struct heartyfs_directory **d
     return current_block_id;
 }
 
+/**
+ * @brief Find a free block in the bitmap
+ * 
+ * @param bitmap - The bitmap containing the block allocation information
+ * @return int - The block number of the free block, -1 if not found
+ */
 int create_file(void *buffer, unsigned char *bitmap, const char *path) {
     char *path_copy = strdup(path);
     char *file_name = basename(path_copy);
@@ -91,7 +86,7 @@ int create_file(void *buffer, unsigned char *bitmap, const char *path) {
     }
 
     // Check if parent directory is full
-    if (parent_dir->size >= 14) {
+    if (parent_dir->size >= DIR_MAX_ENTRIES) {
         fprintf(stderr, "Error: Parent directory is full\n");
         free(path_copy);
         return -1;

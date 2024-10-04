@@ -16,7 +16,7 @@
 /**
  * @brief Print the contents of the superblock (root directory).
  * 
- * @param buffer 
+ * @param buffer - the buffer containing the superblock
  */
 void print_superblock(void *buffer) {
     struct heartyfs_directory *root = (struct heartyfs_directory *)buffer;
@@ -37,7 +37,7 @@ void print_superblock(void *buffer) {
 /**
  * @brief Print the contents of the bitmap.
  * 
- * @param buffer 
+ * @param buffer - the buffer containing the bitmap
  */
 void print_bitmap(void *buffer) {
     unsigned char *bitmap = (unsigned char *)buffer + BLOCK_SIZE;  // Start of Block 1
@@ -51,6 +51,7 @@ void print_bitmap(void *buffer) {
         if ((i + 1) % 8 == 0) printf("\n");
         else printf(" ");
     }
+    printf("\n");
 }
 
 int main() {
