@@ -4,7 +4,8 @@
 - src/main.sh - to compile and execute heartyfs_init.c
 - src/check.sh - to compile and execute heartyfs_check.c (prints out the superblock and bitmap)
 
-- src/heartyfs_functions.c - This file contains functions for handling directory and file operations in the HeartyFS file system.
+- src/heartyfs_functions.c - This file contains useful functions such as find_free_block, set_block_used, set_block_free, etc...
+- src/heartyfs_functions.h - Header file to include the useful functions in other c files
 - src/op/mkdir.sh - to compile and execute heartyfs_mkdir.c
 - src/op/rmdir.sh - to compile and execute heartyfs_rmdir.c
 - src/op/creat.sh - to compile and execute heartyfs_creat.c
