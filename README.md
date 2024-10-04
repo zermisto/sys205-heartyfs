@@ -1,5 +1,17 @@
 # SYS-205 Assessment 4 - Implementing the `heartyfs` file system
 
+> **_King's NOTES:_**
+- src/main.sh - to compile and execute heartyfs_init.c
+- src/check.sh - to compile and execute heartyfs_check.c (prints out the superblock and bitmap)
+
+- src/heartyfs_functions.c - This file contains functions for handling directory and file operations in the HeartyFS file system.
+- src/op/mkdir.sh - to compile and execute heartyfs_mkdir.c
+- src/op/rmdir.sh - to compile and execute heartyfs_rmdir.c
+- src/op/creat.sh - to compile and execute heartyfs_creat.c
+- src/op/rm.sh - to compile and execute heartyfs_rm.c
+- src/op/write.sh - to compile and execute heartyfs_write.c
+- src/op/read.sh - to compile and execute heartyfs_read.c 
+
 `heartyfs` is a very simple file system that has common file system structures: superblock, inodes, free bitmap, and data blocks. You are tasked to implement all of these structures along with 6 basic file system operations: `mkdir`, `rmdir`, `creat`, `rm`, `read`, and `write`.
 
 `heartyfs` will be layed out on a linear array of 512-byte blocks. The array will be physically put into a 1-MB disk file at `/tmp/heartyfs`. Thus, in total, there will be 2048 blocks.
